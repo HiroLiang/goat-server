@@ -1,0 +1,30 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Coverage / profiles
+coverage*.out
+*.prof
+*.pprof
+
+# Binaries / build artifacts
+/bin/
+/build/
+/dist/
+/out/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Env / secrets
+.env
+.env.*
+!.env.example
