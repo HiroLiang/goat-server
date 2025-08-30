@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/HiroLiang/goat-chat-server/internal/api/middleware"
 	routes2 "github.com/HiroLiang/goat-chat-server/internal/api/routes"
-	"github.com/HiroLiang/goat-chat-server/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 
