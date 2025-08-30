@@ -6,6 +6,7 @@
 *.dylib
 *.test
 *.out
+*.db
 
 # Coverage / profiles
 coverage*.out
