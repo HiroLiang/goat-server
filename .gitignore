@@ -6,6 +6,7 @@
 *.dylib
 *.test
 *.out
+*.db
 
 # Coverage / profiles
 coverage*.out
@@ -17,6 +18,7 @@ coverage*.out
 /build/
 /dist/
 /out/
+/docs/
 
 # Editors / OS
 .DS_Store
@@ -28,3 +30,6 @@ coverage*.out
 .env
 .env.*
 !.env.example
+
+# sql
+*.sql

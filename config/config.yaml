@@ -1,0 +1,8 @@
+databases:
+  postgres:
+    driver: pgx
+    dsn: "postgres://hiro:1234@localhost:5432/goat?sslmode=disable"
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
