@@ -30,6 +30,3 @@ coverage*.out
 .env
 .env.*
 !.env.example
-
-# sql
-*.sql

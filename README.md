@@ -5,7 +5,7 @@ Goat Application Server
 
 ---
 
-Goat-Chat is a personal practice project of Tauri desktop application with Ollama agent. 
+Goat-Chat is a personal practice project of a Tauri desktop application with the Ollama agent. 
 I use GoLang to be its server side.
 
 ## Planing
@@ -14,4 +14,32 @@ I use GoLang to be its server side.
 
 - User authentication
 - Chat control (websocket, LLM redirect, chat group switcher...)
-- Just for practice. Other features are on the road... Maybe to send order to resp berry pi IOT?
+- For practice. Other features are on the road... Maybe to send an order to resp berry pi IOT?
+
+## Commands
+
+---
+
+- Api
+```shell
+# test locally
+make run
+
+# build
+make build
+
+# delete build
+make clean
+```
+
+- Swagger
+```shell
+# install swag
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# check swag version
+swag --version
+
+# generate swagger docs
+make swag
+```

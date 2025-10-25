@@ -1,7 +1,7 @@
 // @title Goat-Server
 // @version 1.0.0
 // @description Server for my all Goat application
-// @host localhost:8080
+// @host api.hiroliang.com
 // @path /
 package main
 
@@ -50,6 +50,7 @@ func main() {
 	}
 	defer database.CloseAllDBs()
 
+	// Test Database
 	if _, ok := database.GetDB(database.Postgres); !ok {
 		logger.Log.Fatal("Basic database not initialized")
 	}

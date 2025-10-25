@@ -10,13 +10,18 @@ help:
 	@echo "Commends："
 	@echo "  make build    # Compile -> $(BIN)"
 	@echo "  make clean    # clean compiled output"
+	@echo "  make run      # Start goat-api locally"
+	@echo "  make swag     # Build swagger docs in ./docs/"
 
 .PHONY: build clean run
 build:
-	go build -o bin/api ./cmd/api
+	GOOS=linux GOARCH=amd64 go build -o bin/goat-api ./cmd/api
 
 clean:
 	rm -rf bin
 
 run:
 	go run ./cmd/api
+
+swag:
+	swag init -g cmd/api/main.go
