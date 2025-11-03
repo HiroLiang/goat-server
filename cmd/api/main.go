@@ -8,6 +8,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,7 +26,9 @@ import (
 )
 
 func init() {
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Println("[WARN] No .env file found")
+	}
 }
 
 func main() {
@@ -51,7 +54,7 @@ func main() {
 	defer database.CloseAllDBs()
 
 	// Test Database
-	if _, ok := database.GetDB(database.Postgres); !ok {
+	if db := database.GetDB(database.Postgres); db == nil {
 		logger.Log.Fatal("Basic database not initialized")
 	}
 

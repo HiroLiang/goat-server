@@ -1,0 +1,95 @@
+name: Deploy Goat-Server to GCP VM
+
+on:
+  push:
+    branches: [ main, feature/dev ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: goat-server-deployment
+
+    env:
+      GO_VERSION: "1.25.0"
+      GCP_VM_NAME: "goat-server"
+      GCP_ZONE: "asia-east1-a"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.0'
+
+      - name: Set deployment environments
+        run: |
+          if [ "${GITHUB_REF##*/}" = "main" ]; then 
+            echo "DEPLOY_DIR=/opt/goat-server" >> $GITHUB_ENV
+            echo "SERVICE_NAME=goat-server" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_DIR=/opt/goat-dev-server" >> $GITHUB_ENV
+            echo "SERVICE_NAME=goat-dev-server" >> $GITHUB_ENV
+          fi
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Compile and build binary
+        run: |
+          mkdir -p bin
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init -g cmd/api/main.go -o docs
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/goat-api cmd/api/main.go
+
+      - name: Show binary file info
+        run: file bin/goat-api || true
+
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          head -3 ~/.ssh/id_rsa
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: '>= 363.0.0'
+          install_components: beta
+
+      - name: Register SSH public key to OS Login
+        run: |
+          ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+          gcloud compute os-login ssh-keys add --key-file ~/.ssh/id_rsa.pub
+
+      - name: Get OS Login username for Service Account
+        id: oslogin-user
+        run: |
+          SA_EMAIL="${{ secrets.GCP_SERVICE_ACCOUNT }}"
+          SA_ID=$(gcloud iam service-accounts describe "$SA_EMAIL" --format="value(uniqueId)")
+          echo "SA_ID=$SA_ID"
+          echo "OS_LOGIN_USER=sa_${SA_ID}" >> $GITHUB_ENV
+
+      - name: Deploy to GCP VM
+        run: |
+          echo "Deploying ${SERVICE_NAME} to ${DEPLOY_DIR}"
+          gcloud beta compute scp bin/goat-api \
+            ${OS_LOGIN_USER}@${GCP_VM_NAME}:${DEPLOY_DIR}/ \
+            --zone=${GCP_ZONE} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa --quiet
+
+          gcloud compute ssh ${OS_LOGIN_USER}@${GCP_VM_NAME} \
+            --zone=${GCP_ZONE} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa --quiet \
+            --command="sudo systemctl daemon-reload && sudo systemctl restart ${SERVICE_NAME} && sudo systemctl status ${SERVICE_NAME} --no-pager"
+          
+          echo "Deployment complete for ${SERVICE_NAME} on ${BRANCH}"
