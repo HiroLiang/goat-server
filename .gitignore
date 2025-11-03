@@ -19,6 +19,7 @@ coverage*.out
 /dist/
 /out/
 /docs/
+/config/
 
 # Editors / OS
 .DS_Store

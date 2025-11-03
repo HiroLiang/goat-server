@@ -15,7 +15,7 @@ help:
 
 .PHONY: build clean run
 build:
-	GOOS=linux GOARCH=amd64 go build -o bin/goat-api ./cmd/api
+	go build -o bin/goat-api ./cmd/api
 
 clean:
 	rm -rf bin
