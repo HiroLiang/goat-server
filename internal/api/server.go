@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/HiroLiang/goat-server/internal/api/routes"
+	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,9 @@ func NewServer(addr string) *http.Server {
 	initConfig(r)
 
 	// Register Swagger
-	routes.RegisterSwaggerRoutes(r)
+	if config.Env("APP_ENV", "main") == "dev" {
+		routes.RegisterSwaggerRoutes(r)
+	}
 
 	// Register REST routes
 	routes.RegisterRestRoutes(r)

@@ -26,10 +26,12 @@ jobs:
             echo "TAG=latest" >> $GITHUB_ENV
             echo "WORK_DIR=/opt/goat-server" >> $GITHUB_ENV
             echo "GOAT_SERVER_PORT=8080" >> $GITHUB_ENV
+            echo "GOAT_SERVER_NAME=goat-server" >> $GITHUB_ENV
           elif [ "${{ github.ref }}" == "refs/heads/feature/dev" ]; then
             echo "TAG=dev" >> $GITHUB_ENV
             echo "WORK_DIR=/opt/goat-dev-server" >> $GITHUB_ENV
             echo "GOAT_SERVER_PORT=9090" >> $GITHUB_ENV
+            echo "GOAT_SERVER_NAME=goat-dev-server" >> $GITHUB_ENV
           fi
       
       # Login to Docker Hub #
@@ -82,11 +84,11 @@ jobs:
               echo 'Pulling latest image...'
               sudo podman pull docker.io/${IMAGE_NAME}:${TAG}
               echo 'Stopping old container...'
-              sudo podman stop goat-server || true
-              sudo podman rm goat-server || true
+              sudo podman stop ${GOAT_SERVER_NAME} || true
+              sudo podman rm ${GOAT_SERVER_NAME} || true
               echo 'Starting new container...'
               sudo podman run -d \
-                --name goat-server \
+                --name ${GOAT_SERVER_NAME} \
                 --network goat-net \
                 -p ${GOAT_SERVER_PORT}:${GOAT_SERVER_PORT} \
                 -v ./config:/app/config:ro \

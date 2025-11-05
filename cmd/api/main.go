@@ -1,7 +1,7 @@
 // @title Goat-Server
 // @version 1.0.0
 // @description Server for my all Goat application
-// @host api.hiroliang.com
+// @host dev.hiroliang.com
 // @path /
 package main
 
