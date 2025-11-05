@@ -17,17 +17,13 @@ RUN go install github.com/swaggo/swag/cmd/swag@latest && \
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o goat-server ./cmd/api
 
 # =====================================================
-# Run Stage
+# Run Stage (mount Volume while run it)
 # =====================================================
 FROM alpine:latest
 
 WORKDIR /app
 
 COPY --from=builder /app/goat-server .
-
-COPY --from=builder /app/config ./config
-
-COPY --from=builder /app/.env .
 
 EXPOSE 8080
 

@@ -13,83 +13,84 @@ jobs:
     runs-on: ubuntu-latest
     environment: goat-server-deployment
 
-    env:
-      GO_VERSION: "1.25.0"
-      GCP_VM_NAME: "goat-server"
-      GCP_ZONE: "asia-east1-a"
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Setup Go environment
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.25.0'
-
-      - name: Set deployment environments
+      # Set env for workflow #
+      - name: Set env
         run: |
-          if [ "${GITHUB_REF##*/}" = "main" ]; then 
-            echo "DEPLOY_DIR=/opt/goat-server" >> $GITHUB_ENV
-            echo "SERVICE_NAME=goat-server" >> $GITHUB_ENV
-          else
-            echo "DEPLOY_DIR=/opt/goat-dev-server" >> $GITHUB_ENV
-            echo "SERVICE_NAME=goat-dev-server" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/goat-server" >> $GITHUB_ENV
+          
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "TAG=latest" >> $GITHUB_ENV
+            echo "WORK_DIR=/opt/goat-server" >> $GITHUB_ENV
+            echo "GOAT_SERVER_PORT=8080" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" == "refs/heads/feature/dev" ]; then
+            echo "TAG=dev" >> $GITHUB_ENV
+            echo "WORK_DIR=/opt/goat-dev-server" >> $GITHUB_ENV
+            echo "GOAT_SERVER_PORT=9090" >> $GITHUB_ENV
           fi
-          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      
+      # Login to Docker Hub #
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Compile and build binary
+      # Build and push Docker image #
+      - name: Build and Push
         run: |
-          mkdir -p bin
-          go install github.com/swaggo/swag/cmd/swag@latest
-          swag init -g cmd/api/main.go -o docs
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/goat-api cmd/api/main.go
+          docker build -t ${IMAGE_NAME}:${TAG} .
+          docker push ${IMAGE_NAME}:${TAG}
+          
+          echo "Pushed ${IMAGE_NAME}:${TAG}"
 
-      - name: Show binary file info
-        run: file bin/goat-api || true
-
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${SSH_PRIVATE_KEY}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          head -3 ~/.ssh/id_rsa
-
+      # Authenticate to Google Cloud #
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Setup Cloud SDK
+      # Install stable gcloud CLI
+      - name: Install specific gcloud version
         uses: google-github-actions/setup-gcloud@v3
         with:
-          version: '>= 363.0.0'
-          install_components: beta
+          version: '543.0.0'
+          install_components: 'beta'
 
-      - name: Register SSH public key to OS Login
+      # Setup Cloud SDK #
+      - name: Configure gcloud to use credentials
         run: |
-          ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
-          gcloud compute os-login ssh-keys add --key-file ~/.ssh/id_rsa.pub
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          gcloud info | grep Account
 
-      - name: Get OS Login username for Service Account
-        id: oslogin-user
+      # Deploy to GCP VM #
+      - name: Deploy image to GCP VM
         run: |
-          SA_EMAIL="${{ secrets.GCP_SERVICE_ACCOUNT }}"
-          SA_ID=$(gcloud iam service-accounts describe "$SA_EMAIL" --format="value(uniqueId)")
-          echo "SA_ID=$SA_ID"
-          echo "OS_LOGIN_USER=sa_${SA_ID}" >> $GITHUB_ENV
-
-      - name: Deploy to GCP VM
-        run: |
-          echo "Deploying ${SERVICE_NAME} to ${DEPLOY_DIR}"
-          gcloud beta compute scp bin/goat-api \
-            ${OS_LOGIN_USER}@${GCP_VM_NAME}:${DEPLOY_DIR}/ \
-            --zone=${GCP_ZONE} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa --quiet
-
-          gcloud compute ssh ${OS_LOGIN_USER}@${GCP_VM_NAME} \
-            --zone=${GCP_ZONE} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa --quiet \
-            --command="sudo systemctl daemon-reload && sudo systemctl restart ${SERVICE_NAME} && sudo systemctl status ${SERVICE_NAME} --no-pager"
+          export GOOGLE_APPLICATION_CREDENTIALS="$GOOGLE_GHA_CREDS_PATH"
+          GCP_VM_NAME="goat-server"
+          GCP_ZONE="asia-east1-a"
           
-          echo "Deployment complete for ${SERVICE_NAME} on ${BRANCH}"
+          gcloud beta compute ssh "${GCP_VM_NAME}" \
+            --zone="$GCP_ZONE" \
+            --tunnel-through-iap \
+            --command "
+              cd ${WORK_DIR}
+              echo 'Pulling latest image...'
+              sudo podman pull docker.io/${IMAGE_NAME}:${TAG}
+              echo 'Stopping old container...'
+              sudo podman stop goat-server || true
+              sudo podman rm goat-server || true
+              echo 'Starting new container...'
+              sudo podman run -d \
+                --name goat-server \
+                --network goat-net \
+                -p ${GOAT_SERVER_PORT}:${GOAT_SERVER_PORT} \
+                -v ./config:/app/config:ro \
+                -v .env:/app/.env:ro \
+                ${IMAGE_NAME}:${TAG}
+              echo 'Deployment complete'
+            "

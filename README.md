@@ -97,6 +97,7 @@ docker run -d \
   -e POSTGRES_PASSWORD=1234 \
   -e POSTGRES_DB=goat \
   -p 5432:5432 \
+  -v ~/podman-data/postgres:/data \
   docker.io/library/postgres:18
   
 # 7.Add required documents below
@@ -116,8 +117,9 @@ docker run -d \
   --name goat-server \
   --network goat-net \
   -p 8080:8080 \
+  -v ./config:/app/config:ro \
+  -v .env:/app/.env:ro \
   goat-server:latest
-
 ```
 
 - Documents
@@ -127,7 +129,7 @@ docker run -d \
 databases:
   mysql: # not used
     driver: mysql
-    dsn: "root:1234@tcp(localhost:3306)/goat?charset=utf8mb4&parseTime=True&loc=Local"
+    dsn: "root:1234@tcp(mysql:3306)/goat?charset=utf8mb4&parseTime=True&loc=Local"
     config:
       max_open_conns: 20
       max_idle_conns: 10
@@ -135,14 +137,14 @@ databases:
       conn_max_idle_time: 600 # second
   postgres:
     driver: pgx
-    dsn: "postgres://root:1234@localhost:5432/goat?sslmode=disable"
+    dsn: "postgres://root:1234@postgres:5432/goat?sslmode=disable"
     config:
       max_open_conns: 30
       max_idle_conns: 15
       conn_max_lifetime: 3600 # second
       conn_max_idle_time: 600 # second
 redis:
-  addr: "localhost:6379"
+  addr: "redis:6379"
   password: "1234"
   db: 0
 ```
