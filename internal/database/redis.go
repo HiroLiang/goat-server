@@ -11,15 +11,15 @@ import (
 var RedisClient *redis.Client
 
 func InitRedis() error {
-	if &config.Cfg.Redis.Addr == nil || config.Cfg.Redis.Addr == "" {
+	if &config.App().Redis.Addr == nil || config.App().Redis.Addr == "" {
 		fmt.Println("without using redis")
 		return nil
 	}
 
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     config.Cfg.Redis.Addr,
-		Password: config.Cfg.Redis.Password,
-		DB:       config.Cfg.Redis.DB,
+		Addr:     config.App().Redis.Addr,
+		Password: config.App().Redis.Password,
+		DB:       config.App().Redis.DB,
 	})
 
 	_, err := RedisClient.Ping(context.Background()).Result()

@@ -17,6 +17,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # Setup Go environment
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: make setup
+
+      # Run tests (Unit + BDD)
+      - name: Run Go tests
+        run: |
+          echo "Running Go tests..."
+          make test
+
       # Set env for workflow #
       - name: Set env
         run: |

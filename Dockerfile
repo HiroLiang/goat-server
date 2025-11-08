@@ -11,8 +11,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go install github.com/swaggo/swag/cmd/swag@latest && \
-    swag init -g cmd/api/main.go -o docs
+RUN make setup && \
+    make swag
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o goat-server ./cmd/api
 

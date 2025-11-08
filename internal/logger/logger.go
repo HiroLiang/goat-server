@@ -23,6 +23,15 @@ func Init() {
 	}
 }
 
+func InitTestEnv() {
+	var err error
+	Log, err = zap.NewDevelopment()
+	if err != nil {
+		panic(err)
+	}
+	zap.ReplaceGlobals(Log)
+}
+
 func Stop() {
 	if Log != nil {
 		_ = Log.Sync()
