@@ -35,7 +35,7 @@ func InitDB() error {
 	dbs.Clear()
 
 	// For each database config
-	for name, conf := range config.Cfg.Database {
+	for name, conf := range config.App().Database {
 
 		// check if db name is valid (set in enum DBName)
 		if _, ok := isValidName(name); ok {

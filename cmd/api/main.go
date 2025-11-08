@@ -65,6 +65,14 @@ func main() {
 			logger.Log.Error("Server start error", zap.Error(err))
 		}
 	}()
+	defer func(srv *http.Server) {
+		err := srv.Close()
+		if err != nil {
+			logger.Log.Error("Server close error", zap.Error(err))
+		} else {
+			logger.Log.Info("Server closed")
+		}
+	}(srv)
 
 	// graceful shoutdown
 	quit := make(chan os.Signal, 1)

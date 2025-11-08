@@ -23,7 +23,7 @@ I use GoLang to be its server side.
 - Api
 
 ```shell
-# test locally
+# run locally
 make run
 
 # build
@@ -31,6 +31,9 @@ make build
 
 # delete build
 make clean
+
+# test
+make test
 ```
 
 - Swagger
@@ -46,6 +49,20 @@ swag --version
 make swag
 ```
 
+- Godog (BDD test)
+
+```shell
+# install godog
+go install github.com/cucumber/godog/cmd/godog@latest
+
+# check godog version
+godog version
+
+# run test (-v: verbose)
+go test -v ./features
+
+```
+
 ## For developers
 
 ---
@@ -58,16 +75,16 @@ make swag
 brew install go
 # Windows : https://go.dev/dl/ 
 
-# 2. Install swag
-go install github.com/swaggo/swag/cmd/swag@latest
+# 2. Install dependencies
+make setup
 
 # 3. Change the @host 'api.hiroliang.com' path at cmd/api/main.go to localhost:8080
 
-# 4. Install dependencies
-go mod tidy
-
-# 5. Generate swagger docs
+# 4. Generate swagger docs
 make swag
+
+# 5. Install dependencies
+go mod tidy
 
 # 6. Build datasource at first time (use docker or podman)
 
