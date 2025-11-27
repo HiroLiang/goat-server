@@ -1,13 +1,18 @@
 // @title Goat-Server
 // @version 1.0.0
 // @description Server for my all Goat application
-// @host dev.hiroliang.com
-// @path /
+// @host localhost:8080
+// @basePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 package main
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +21,7 @@ import (
 	"time"
 
 	"github.com/HiroLiang/goat-server/internal/api"
+	"github.com/HiroLiang/goat-server/internal/api/handler"
 	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/HiroLiang/goat-server/internal/database"
 	"github.com/HiroLiang/goat-server/internal/logger"
@@ -44,7 +50,7 @@ func main() {
 
 	// Init Redis
 	if err := database.InitRedis(); err != nil {
-		logger.Log.Fatal("Error initializing database", zap.Error(err))
+		logger.Log.Fatal("Error initializing Redis", zap.Error(err))
 	}
 
 	// Init Database
@@ -57,6 +63,15 @@ func main() {
 	if db := database.GetDB(database.Postgres); db == nil {
 		logger.Log.Fatal("Basic database not initialized")
 	}
+
+	// Init User Handler (Authentication)
+	jwtSecret := config.Env("JWT_SECRET", "default-secret-change-in-production")
+	jwtExpirationStr := config.Env("JWT_EXPIRATION_HOURS", "24")
+	jwtExpiration := 24
+	if _, err := fmt.Sscanf(jwtExpirationStr, "%d", &jwtExpiration); err != nil {
+		logger.Log.Warn("Invalid JWT_EXPIRATION_HOURS, using default 24 hours")
+	}
+	handler.InitUserHandler(jwtSecret, jwtExpiration)
 
 	// Start server
 	srv := api.NewServer(":" + config.Env("SERVER_PORT", "8080"))
