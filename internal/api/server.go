@@ -5,8 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/HiroLiang/goat-server/internal/api/handler"
 	"github.com/HiroLiang/goat-server/internal/api/routes"
 	"github.com/HiroLiang/goat-server/internal/config"
+	"github.com/HiroLiang/goat-server/internal/database"
+	"github.com/HiroLiang/goat-server/internal/database/repository"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +20,9 @@ func NewServer(addr string) *http.Server {
 
 	// Init config
 	initConfig(r)
+
+	userRepo := repository.NewUserRepo(database.Postgres)
+	handler.InitUserHandler(userRepo)
 
 	// Register Swagger
 	if config.Env("APP_ENV", "main") == "dev" {
