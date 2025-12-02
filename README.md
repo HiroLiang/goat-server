@@ -143,6 +143,10 @@ docker run -d \
 
 ```yaml
 # ./config/config.yaml (relative to project root)
+auth_token:
+  expiration: 3600
+secrets:
+  HMAC_SECRET: "00000000000000000000000000000000"
 databases:
   mysql: # not used
     driver: mysql
