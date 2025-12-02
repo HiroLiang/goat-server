@@ -18,7 +18,7 @@ coverage*.out
 /build/
 /dist/
 /out/
-/docs/
+/swag-docs/
 /config/
 
 # Editors / OS

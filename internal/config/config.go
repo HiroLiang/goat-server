@@ -12,26 +12,30 @@ import (
 // AppConfig - struct of app config.
 // Add more config here if any new config been added in config.yaml.
 type AppConfig struct {
+	AuthToken struct {
+		Expiration int `mapstructure:"expiration"`
+	} `mapstructure:"auth_token"`
+
 	Secrets struct {
-		HmacSecret string `destructure:"HMAC_SECRET"`
-	} `destructure:"secrets"`
+		HmacSecret string `mapstructure:"HMAC_SECRET"`
+	} `mapstructure:"secrets"`
 
 	Database map[string]struct {
 		Driver string `mapstructure:"driver"`
 		Dsn    string `mapstructure:"dsn"`
 		Config *struct {
-			MaxOpenConns    int `destructure:"max_open_conns"`
-			MaxIdleConns    int `destructure:"max_idle_conns"`
-			ConnMaxLifetime int `destructure:"conn_max_lifetime"`
-			ConnMaxIdleTime int `destructure:"conn_max_idle_time"`
+			MaxOpenConns    int `mapstructure:"max_open_conns"`
+			MaxIdleConns    int `mapstructure:"max_idle_conns"`
+			ConnMaxLifetime int `mapstructure:"conn_max_lifetime"`
+			ConnMaxIdleTime int `mapstructure:"conn_max_idle_time"`
 		} `mapstructure:"config"`
 	} `mapstructure:"databases"`
 
 	Redis struct {
-		Addr     string `destructure:"addr"`
-		Password string `destructure:"password"`
-		DB       int    `destructure:"db"`
-	} `destructure:"redis"`
+		Addr     string `mapstructure:"addr"`
+		Password string `mapstructure:"password"`
+		DB       int    `mapstructure:"db"`
+	} `mapstructure:"redis"`
 }
 
 // global singleton config

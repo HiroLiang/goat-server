@@ -12,9 +12,9 @@ RUN go mod download
 COPY . .
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest && \
-    swag init -g cmd/api/main.go -o docs
+    swag init -g cmd/server/main.go -o swag-docs
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o goat-server ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o goat-server ./cmd/server
 
 # =====================================================
 # Run Stage (mount Volume while run it)
