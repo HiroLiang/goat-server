@@ -1,6 +1,6 @@
 # ---- config ----
 APP       := api
-CMD_DIR   := ./cmd/api
+CMD_DIR   := ./cmd/server
 BIN       := bin/$(APP)
 GO        := go
 
@@ -28,16 +28,16 @@ setup_godog:
 	go install github.com/cucumber/godog/cmd/godog@latest
 
 build:
-	go build -o bin/goat-api ./cmd/api
+	go build -o bin/goat-api ./cmd/server
 
 clean:
 	rm -rf bin
 
 run:
-	go run ./cmd/api
+	go run ./cmd/server
 
 swag:
-	swag init -g cmd/api/main.go -o docs
+	swag init -g cmd/server/main.go -o swag-docs
 
 .PHONY: test unit bdd
 
