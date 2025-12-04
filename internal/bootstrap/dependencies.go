@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"time"
 
-	"github.com/HiroLiang/goat-server/internal/application/shared/auth"
+	"github.com/HiroLiang/goat-server/internal/application/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared/security"
 	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/HiroLiang/goat-server/internal/domain/agent"

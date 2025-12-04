@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/HiroLiang/goat-server/internal/application/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared"
-	"github.com/HiroLiang/goat-server/internal/application/shared/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared/security"
 	session "github.com/HiroLiang/goat-server/internal/domain/auth"
 	"github.com/HiroLiang/goat-server/internal/domain/role"

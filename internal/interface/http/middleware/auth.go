@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/HiroLiang/goat-server/internal/application/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared"
-	"github.com/HiroLiang/goat-server/internal/application/shared/auth"
 	"github.com/HiroLiang/goat-server/internal/interface/http/response"
 	"github.com/gin-gonic/gin"
 )
