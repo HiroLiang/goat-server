@@ -6,8 +6,10 @@ import (
 	"github.com/HiroLiang/goat-server/internal/application/shared/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared/security"
 	"github.com/HiroLiang/goat-server/internal/config"
+	"github.com/HiroLiang/goat-server/internal/domain/agent"
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
+	dbAgent "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/agent"
 	dbUser "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/user"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis"
 	infraAuth "github.com/HiroLiang/goat-server/internal/infrastructure/shared/auth"
@@ -19,6 +21,7 @@ type Dependencies struct {
 	HMACer       security.HMACer
 	TokenService auth.TokenService
 	UserRepo     user.Repository
+	AgentRepo    agent.Repository
 }
 
 func BuildDeps() (*Dependencies, error) {
@@ -37,5 +40,6 @@ func BuildDeps() (*Dependencies, error) {
 		HMACer:       infraSecurity.NewSHA256HMACer(hmacSecret),
 		TokenService: infraAuth.NewAuthTokenService(redis.RedisClient, time.Duration(authExpiration)*time.Second),
 		UserRepo:     dbUser.NewUserRepository(database.Postgres),
+		AgentRepo:    dbAgent.NewAgentRepository(database.Postgres),
 	}, nil
 }

@@ -6,6 +6,7 @@ type LoginOutput struct {
 	Token string
 }
 
+// CurrentUserOutput let current user logout
 type CurrentUserOutput struct {
 	Name     string
 	Email    string

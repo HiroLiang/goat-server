@@ -32,6 +32,7 @@ build:
 
 clean:
 	rm -rf bin
+	rm -rf swag-docs
 
 run:
 	go run ./cmd/server

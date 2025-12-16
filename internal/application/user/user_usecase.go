@@ -26,15 +26,16 @@ func NewUseCase(repo user.Repository, hasher security.Hasher, tokenService auth.
 	}
 }
 
+// Register User register
 func (u *UseCase) Register(ctx context.Context, input shared.UseCaseInput[RegisterInput]) error {
 	hash, err := u.hasher.Hash(input.Data.Password)
 	if err != nil {
-		return ErrInvalidPassword
+		return user.ErrInvalidPassword
 	}
 
 	email, err := user.NewEmail(input.Data.Email)
 	if err != nil {
-		return ErrInvalidEmail
+		return user.ErrInvalidEmail
 	}
 
 	newUser := user.NewUser(
@@ -57,20 +58,20 @@ func (u *UseCase) Login(ctx context.Context, input shared.UseCaseInput[LoginInpu
 	// Check email and build vo
 	email, err := user.NewEmail(input.Data.Email)
 	if err != nil {
-		return LoginOutput{}, ErrInvalidEmail
+		return LoginOutput{}, user.ErrInvalidEmail
 	}
 
 	// Check is user exists
 	currentUser, err := u.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return LoginOutput{}, ErrUserNotFound
+		return LoginOutput{}, user.ErrUserNotFound
 	} else if !currentUser.IsValid() {
-		return LoginOutput{}, ErrInvalidUser
+		return LoginOutput{}, user.ErrInvalidUser
 	}
 
 	// Check password
 	if !u.hasher.Verify(input.Data.Password, currentUser.Password) {
-		return LoginOutput{}, ErrInvalidPassword
+		return LoginOutput{}, user.ErrInvalidPassword
 	}
 
 	// Generate auth token and store in redis
@@ -80,7 +81,7 @@ func (u *UseCase) Login(ctx context.Context, input shared.UseCaseInput[LoginInpu
 		UserAgent: "",
 	})
 	if err != nil {
-		return LoginOutput{}, ErrGenerateToken
+		return LoginOutput{}, user.ErrGenerateToken
 	}
 
 	return LoginOutput{Token: authToken}, nil
@@ -93,14 +94,14 @@ func (u *UseCase) Logout(ctx context.Context, input shared.UseCaseInput[struct{}
 
 // CurrentUserInfo Get current user info
 func (u *UseCase) CurrentUserInfo(ctx context.Context, input shared.UseCaseInput[struct{}]) (CurrentUserOutput, error) {
-	id, err := user.NewIDFromString(input.Base.Auth.UserID)
+	id, err := user.ToID(input.Base.Auth.UserID)
 	if err != nil {
-		return CurrentUserOutput{}, ErrInvalidUser
+		return CurrentUserOutput{}, user.ErrInvalidUser
 	}
 
 	domainUser, err := u.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return CurrentUserOutput{}, ErrUserNotFound
+		return CurrentUserOutput{}, user.ErrUserNotFound
 	}
 
 	return CurrentUserOutput{

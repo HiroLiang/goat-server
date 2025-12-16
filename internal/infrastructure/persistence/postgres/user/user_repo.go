@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
@@ -11,18 +12,19 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var userColumns = []string{
-	"id",
-	"name",
-	"email",
-	"password",
-	"user_status",
-	"user_ip",
-	"created_at",
-	"updated_at",
+var userTable = postgres.Table{
+	Name: "public.users",
+	Columns: []string{
+		"id",
+		"name",
+		"email",
+		"password",
+		"user_status",
+		"user_ip",
+		"created_at",
+		"updated_at",
+	},
 }
-
-var builder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
 type UserRepository struct {
 	db *sqlx.DB
@@ -43,12 +45,11 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email user.Email) (*us
 }
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
-	rec := toRecord(u)
+	record := toRecord(u)
 
-	query, args, err := builder.
-		Insert("public.users").
+	query, args, err := userTable.Insert().
 		Columns("name", "email", "password", "user_status", "user_ip").
-		Values(rec.Name, rec.Email, rec.Password, rec.UserStatus, rec.UserIP).
+		Values(record.Name, record.Email, record.Password, record.UserStatus, record.UserIP).
 		ToSql()
 	if err != nil {
 		return err
@@ -60,8 +61,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
 func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	rec := toRecord(u)
 
-	query, args, err := builder.
-		Update("public.users").
+	query, args, err := userTable.Update().
 		Set("name", rec.Name).
 		Set("password", rec.Password).
 		Set("user_status", rec.UserStatus).
@@ -75,14 +75,18 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	return postgres.Exec(ctx, r.db, query, args...)
 }
 
-func baseSelect() squirrel.SelectBuilder {
-	return builder.Select(userColumns...).From("public.users")
-}
+func (r *UserRepository) findOneBy(
+	ctx context.Context,
+	cond squirrel.Eq,
+) (*user.User, error) {
 
-func (r *UserRepository) findOneBy(ctx context.Context, cond squirrel.Eq) (*user.User, error) {
-	query, args, err := baseSelect().Where(cond).Limit(1).ToSql()
+	query, args, err := userTable.
+		Select(userTable.Columns...).
+		Where(cond).
+		Limit(1).
+		ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build user query: %w", err)
 	}
 
 	rec, err := postgres.ScanOne[UserRecord](ctx, r.db, query, args...)
@@ -90,7 +94,7 @@ func (r *UserRepository) findOneBy(ctx context.Context, cond squirrel.Eq) (*user
 		if errors.Is(err, postgres.ErrNotFound) {
 			return nil, user.ErrUserNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("find user: %w", err)
 	}
 
 	return toDomain(rec)
