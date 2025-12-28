@@ -9,21 +9,21 @@ type Status string
 type Engine string
 
 const (
-	Available    Status = "AVAILABLE"
-	Maintaining  Status = "MAINTAINING"
-	Discontinued Status = "DISCONTINUED"
-	Error        Status = "ERROR"
+	Available    Status = "available"
+	Maintaining  Status = "maintaining"
+	Discontinued Status = "discontinued"
+	Error        Status = "error"
 
-	Local  Type = "LOCAL"
-	Remote Type = "REMOTE"
-	Hybrid Type = "HYBRID"
+	Local  Type = "local"
+	Remote Type = "remote"
+	Hybrid Type = "hybrid"
 
-	GGUF   Engine = "GGUF"
-	ONNX   Engine = "ONNX"
-	API    Engine = "API"
-	Cloud  Engine = "CLOUD"
-	MLC    Engine = "MLC"
-	WebGPU Engine = "WebGPU"
+	GGUF   Engine = "gguf"
+	ONNX   Engine = "onnx"
+	API    Engine = "api"
+	Cloud  Engine = "cloud"
+	MLC    Engine = "mlc"
+	WebGPU Engine = "webGPU"
 )
 
 func (s Status) Desc() string {

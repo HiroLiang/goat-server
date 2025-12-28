@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var userTable = postgres.Table{
+var Table = postgres.Table{
 	Name: "public.users",
 	Columns: []string{
 		"id",
@@ -47,7 +47,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email user.Email) (*us
 func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
 	record := toRecord(u)
 
-	query, args, err := userTable.Insert().
+	query, args, err := Table.Insert().
 		Columns("name", "email", "password", "user_status", "user_ip").
 		Values(record.Name, record.Email, record.Password, record.UserStatus, record.UserIP).
 		ToSql()
@@ -61,7 +61,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) error {
 func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	rec := toRecord(u)
 
-	query, args, err := userTable.Update().
+	query, args, err := Table.Update().
 		Set("name", rec.Name).
 		Set("password", rec.Password).
 		Set("user_status", rec.UserStatus).
@@ -80,8 +80,8 @@ func (r *UserRepository) findOneBy(
 	cond squirrel.Eq,
 ) (*user.User, error) {
 
-	query, args, err := userTable.
-		Select(userTable.Columns...).
+	query, args, err := Table.
+		Select(Table.Columns...).
 		Where(cond).
 		Limit(1).
 		ToSql()

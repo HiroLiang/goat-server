@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -33,4 +34,13 @@ func Exec(ctx context.Context, db *sqlx.DB, query string, args ...any) error {
 		return fmt.Errorf("exec query: %w", err)
 	}
 	return nil
+}
+
+func Exists(ctx context.Context, db *sqlx.DB, query string, args ...any) bool {
+	var one int
+	if err := db.QueryRowContext(ctx, query, args...).Scan(&one); err != nil {
+		logger.Log.Error(err.Error())
+		return false
+	}
+	return one > 0
 }

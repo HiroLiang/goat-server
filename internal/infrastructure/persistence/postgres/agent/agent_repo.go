@@ -11,7 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var agentTable = postgres.Table{
+var Table = postgres.Table{
 	Name: "public.agents",
 	Columns: []string{
 		"id",
@@ -51,7 +51,7 @@ func (r AgentRepository) FindAllByStatus(
 func (r AgentRepository) Create(ctx context.Context, agent *agent.Agent) error {
 	record := toRecord(agent)
 
-	query, args, err := agentTable.Insert().
+	query, args, err := Table.Insert().
 		Columns("name", "type", "status", "engine", "create_by", "update_by").
 		Values(record.Name, record.Type, record.Status, record.Engine, record.CreatedBy, record.UpdatedBy).
 		ToSql()
@@ -72,7 +72,7 @@ func (r AgentRepository) find(
 	cond squirrel.Sqlizer,
 ) ([]*agent.Agent, error) {
 
-	builder := agentTable.Select(agentTable.Columns...)
+	builder := Table.Select(Table.Columns...)
 	if cond != nil {
 		builder = builder.Where(cond)
 	}

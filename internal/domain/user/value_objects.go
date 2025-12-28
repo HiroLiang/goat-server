@@ -35,9 +35,9 @@ func containsAt(s string) bool {
 type Status string
 
 const (
-	Active   Status = "ACTIVE"
-	Inactive Status = "INACTIVE"
-	Banned   Status = "BANNED"
-	Applying Status = "APPLYING"
-	Deleted  Status = "DELETED"
+	Active   Status = "active"
+	Inactive Status = "inactive"
+	Banned   Status = "banned"
+	Applying Status = "applying"
+	Deleted  Status = "deleted"
 )
