@@ -2,31 +2,26 @@ package user
 
 import "github.com/HiroLiang/goat-server/internal/domain/user"
 
-func toDomain(rec *UserRecord) (*user.User, error) {
-	email, err := user.NewEmail(rec.Email)
-	if err != nil {
-		return nil, err
-	}
-
+func toDomain(record *UserRecord) (*user.User, error) {
 	return &user.User{
-		ID:        user.ID(rec.ID),
-		Name:      rec.Name,
-		Email:     email,
-		Password:  rec.Password,
-		Status:    user.Status(rec.UserStatus),
-		LastIP:    rec.UserIP,
-		CreatedAt: rec.CreatedAt,
-		UpdatedAt: rec.UpdatedAt,
+		ID:        record.ID,
+		Name:      record.Name,
+		Email:     record.Email,
+		Password:  record.Password,
+		Status:    record.UserStatus,
+		LastIP:    record.UserIP,
+		CreatedAt: record.CreatedAt,
+		UpdatedAt: record.UpdatedAt,
 	}, nil
 }
 
-func toRecord(u *user.User) *UserRecord {
+func toRecord(user *user.User) *UserRecord {
 	return &UserRecord{
-		ID:         int64(u.ID),
-		Name:       u.Name,
-		Email:      string(u.Email),
-		Password:   u.Password,
-		UserStatus: StatusDB(u.Status),
-		UserIP:     u.LastIP,
+		ID:         user.ID,
+		Name:       user.Name,
+		Email:      user.Email,
+		Password:   user.Password,
+		UserStatus: user.Status,
+		UserIP:     user.LastIP,
 	}
 }

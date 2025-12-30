@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"github.com/HiroLiang/goat-server/internal/config"
+	"github.com/HiroLiang/goat-server/internal/interface/http/handler/agent"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/test"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/user"
 	"github.com/HiroLiang/goat-server/internal/interface/http/middleware"
@@ -25,4 +26,7 @@ func RegisterRestRoutes(group *gin.RouterGroup, useCases *UseCases, dependencies
 	var userHandler = user.NewUserHandler(useCases.UserUseCase)
 	userHandler.RegisterUserRoutes(group.Group("/user"))
 
+	// Agent Handler
+	var agentHandler = agent.NewAgentHandler(useCases.AgentUseCase)
+	agentHandler.RegisterAgentRoutes(group.Group("/agent", middleware.RequireAuthMiddleware()))
 }

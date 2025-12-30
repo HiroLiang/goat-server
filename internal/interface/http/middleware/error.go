@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/HiroLiang/goat-server/internal/interface/http/response"
+	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func ErrorHandler() gin.HandlerFunc {
@@ -29,6 +31,7 @@ func ErrorHandler() gin.HandlerFunc {
 		}
 
 		// Unknown error：500 Internal Server Error
+		logger.Log.Error("Unknown error", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": response.ErrorResponse{
 				Code:    "INTERNAL_ERROR",

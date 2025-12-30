@@ -3,10 +3,9 @@ package user
 import (
 	"net/http"
 
-	"github.com/HiroLiang/goat-server/internal/application/shared"
 	"github.com/HiroLiang/goat-server/internal/application/user"
+	"github.com/HiroLiang/goat-server/internal/interface/http/adapter"
 	"github.com/HiroLiang/goat-server/internal/interface/http/middleware"
-	"github.com/HiroLiang/goat-server/internal/interface/http/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,22 +49,13 @@ func (h *UserHandler) register(c *gin.Context) {
 		return
 	}
 
-	mdRaw, exists := c.Get("context")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, response.ErrNotFound("metadata"))
-		return
+	data := user.RegisterInput{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
 	}
 
-	input := shared.UseCaseInput[user.RegisterInput]{
-		Base: *mdRaw.(*shared.BaseInput),
-		Data: user.RegisterInput{
-			Name:     req.Name,
-			Email:    req.Email,
-			Password: req.Password,
-		},
-	}
-
-	if err := h.userUseCase.Register(c.Request.Context(), input); err != nil {
+	if err := h.userUseCase.Register(c.Request.Context(), adapter.BuildInput(c, data)); err != nil {
 		HandleError(c, err)
 		return
 	}
@@ -95,21 +85,12 @@ func (h *UserHandler) login(c *gin.Context) {
 		return
 	}
 
-	mdRaw, exists := c.Get("context")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, response.ErrNotFound("metadata"))
-		return
+	data := user.LoginInput{
+		Email:    req.Email,
+		Password: req.Password,
 	}
 
-	input := shared.UseCaseInput[user.LoginInput]{
-		Base: *mdRaw.(*shared.BaseInput),
-		Data: user.LoginInput{
-			Email:    req.Email,
-			Password: req.Password,
-		},
-	}
-
-	output, err := h.userUseCase.Login(c.Request.Context(), input)
+	output, err := h.userUseCase.Login(c.Request.Context(), adapter.BuildInput(c, data))
 	if err != nil {
 		HandleError(c, err)
 		return
@@ -133,15 +114,7 @@ func (h *UserHandler) login(c *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal Server Error"
 // @Router /api/user/logout [post]
 func (h *UserHandler) logout(c *gin.Context) {
-	mdRaw, exists := c.Get("context")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, response.ErrNotFound("metadata"))
-		return
-	}
-
-	err := h.userUseCase.Logout(c.Request.Context(), shared.UseCaseInput[struct{}]{
-		Base: *mdRaw.(*shared.BaseInput),
-	})
+	err := h.userUseCase.Logout(c.Request.Context(), adapter.BuildEmptyInput(c))
 	if err != nil {
 		HandleError(c, err)
 		return
@@ -163,15 +136,7 @@ func (h *UserHandler) logout(c *gin.Context) {
 // @Failure 500 {object} response.ErrorResponse "Internal Server Error"
 // @Router /api/user/me [get]
 func (h *UserHandler) getCurrentUser(c *gin.Context) {
-	mdRaw, exists := c.Get("context")
-	if !exists {
-		c.JSON(http.StatusInternalServerError, response.ErrNotFound("metadata"))
-		return
-	}
-
-	output, err := h.userUseCase.CurrentUserInfo(c.Request.Context(), shared.UseCaseInput[struct{}]{
-		Base: *mdRaw.(*shared.BaseInput),
-	})
+	output, err := h.userUseCase.CurrentUserInfo(c.Request.Context(), adapter.BuildEmptyInput(c))
 	if err != nil {
 		HandleError(c, err)
 		return
