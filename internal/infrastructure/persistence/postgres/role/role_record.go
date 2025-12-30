@@ -1,11 +1,16 @@
 package role
 
-import "time"
+import (
+	"time"
 
-type Role struct {
-	ID        uint      `db:"id"`
-	Name      string    `db:"name"`
-	CreateBy  string    `db:"create_by"`
+	"github.com/HiroLiang/goat-server/internal/domain/role"
+	"github.com/HiroLiang/goat-server/internal/domain/user"
+)
+
+type RoleRecord struct {
+	ID        role.ID   `db:"id"`
+	Type      role.Type `db:"type"`
+	Creator   user.ID   `db:"creator"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }

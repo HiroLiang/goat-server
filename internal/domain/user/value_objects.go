@@ -6,11 +6,7 @@ import (
 
 type ID int64
 
-func NewID(v int64) ID {
-	return ID(v)
-}
-
-func NewIDFromString(str string) (ID, error) {
+func ToID(str string) (ID, error) {
 	i, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
 		return 0, ErrInvalidID

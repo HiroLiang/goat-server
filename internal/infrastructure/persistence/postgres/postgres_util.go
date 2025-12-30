@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -15,7 +16,7 @@ func ScanOne[T any](ctx context.Context, db *sqlx.DB, query string, args ...any)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("scan query: %w", ErrExec)
+		return nil, fmt.Errorf("scan one: %w", err)
 	}
 	return &rec, nil
 }
@@ -23,18 +24,23 @@ func ScanOne[T any](ctx context.Context, db *sqlx.DB, query string, args ...any)
 func ScanAll[T any](ctx context.Context, db *sqlx.DB, query string, args ...any) ([]T, error) {
 	var list []T
 	if err := db.SelectContext(ctx, &list, query, args...); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return []T{}, nil
-		}
-		return nil, fmt.Errorf("scan query all: %w", ErrExec)
+		return nil, fmt.Errorf("scan all: %w", err)
 	}
 	return list, nil
 }
 
 func Exec(ctx context.Context, db *sqlx.DB, query string, args ...any) error {
-	_, err := db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrExec, err)
+	if _, err := db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("exec query: %w", err)
 	}
 	return nil
+}
+
+func Exists(ctx context.Context, db *sqlx.DB, query string, args ...any) bool {
+	var one int
+	if err := db.QueryRowContext(ctx, query, args...).Scan(&one); err != nil {
+		logger.Log.Error(err.Error())
+		return false
+	}
+	return one > 0
 }
