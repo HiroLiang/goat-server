@@ -2,11 +2,14 @@ package userrole
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/HiroLiang/goat-server/internal/domain/role"
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/domain/userrole"
+	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres"
 	dbRole "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/role"
 	"github.com/Masterminds/squirrel"
@@ -28,15 +31,19 @@ type UserRoleRepository struct {
 
 var _ userrole.Repository = (*UserRoleRepository)(nil)
 
+func NewUserRoleRepository(name database.DBName) *UserRoleRepository {
+	return &UserRoleRepository{db: database.GetDB(name)}
+}
+
 func (r UserRoleRepository) FindRolesByUser(ctx context.Context, userID user.ID) ([]*role.Role, error) {
-	sql, args, err := dbRole.Table.Select(dbRole.Table.Columns...).
+	query, args, err := dbRole.Table.Select(dbRole.Table.Columns...).
 		Where(squirrel.Eq{"user_id": userID}).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build user_role query: %w", err)
 	}
 
-	records, err := postgres.ScanAll[dbRole.RoleRecord](ctx, r.db, sql, args...)
+	records, err := postgres.ScanAll[dbRole.RoleRecord](ctx, r.db, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("scan roles: %w", err)
 	}
@@ -53,8 +60,8 @@ func (r UserRoleRepository) FindRolesByUser(ctx context.Context, userID user.ID)
 	return roles, nil
 }
 
-func (r UserRoleRepository) Exists(ctx context.Context, userID string, role role.Type) bool {
-	sql, args, err := Table.Select("1").
+func (r UserRoleRepository) Exists(ctx context.Context, userID user.ID, role role.Type) bool {
+	query, args, err := Table.Select("1").
 		From(Table.Name+" ur").
 		LeftJoin(dbRole.Table.Name+" r ON ur.role_id = r.id").
 		Where("ur.user_id = ? AND r.type = ?", userID, role).
@@ -63,11 +70,11 @@ func (r UserRoleRepository) Exists(ctx context.Context, userID string, role role
 		return false
 	}
 
-	return postgres.Exists(ctx, r.db, sql, args...)
+	return postgres.Exists(ctx, r.db, query, args...)
 }
 
-func (r UserRoleRepository) Assign(ctx context.Context, userID string, role role.Type) error {
-	sql, args, err := Table.Insert().
+func (r UserRoleRepository) Assign(ctx context.Context, userID user.ID, role role.Type) error {
+	query, args, err := Table.Insert().
 		Columns("user_id", "role_id").
 		Select(
 			postgres.Builder.
@@ -77,17 +84,25 @@ func (r UserRoleRepository) Assign(ctx context.Context, userID string, role role
 				From(dbRole.Table.Name).
 				Where(squirrel.Eq{"type": role}),
 		).
-		Suffix("ON CONFLICT DO NOTHING").
+		Suffix("ON CONFLICT DO NOTHING RETURNING user_id").
 		ToSql()
+	if err != nil {
+		return fmt.Errorf("build assign sql: %w", err)
+	}
+
+	err = r.db.QueryRowContext(ctx, query, args...).Scan(&userID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return userrole.ErrUserRoleAlreadyAssigned
+	}
 	if err != nil {
 		return err
 	}
 
-	return postgres.Exec(ctx, r.db, sql, args...)
+	return nil
 }
 
-func (r UserRoleRepository) Revoke(ctx context.Context, userID string, role role.Type) error {
-	sql, args, err := Table.Delete().
+func (r UserRoleRepository) Revoke(ctx context.Context, userID user.ID, role role.Type) error {
+	query, args, err := Table.Delete().
 		From(Table.Name + " ur").
 		Where(squirrel.And{
 			squirrel.Expr("ur.role_id = r.id"),
@@ -100,8 +115,13 @@ func (r UserRoleRepository) Revoke(ctx context.Context, userID string, role role
 		ToSql()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("build revoke sql: %w", err)
 	}
 
-	return postgres.Exec(ctx, r.db, sql, args...)
+	err = postgres.Exec(ctx, r.db, query, args...)
+	if err != nil {
+		return userrole.ErrRevokeFailed
+	}
+
+	return nil
 }

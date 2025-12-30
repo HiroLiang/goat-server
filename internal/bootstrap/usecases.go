@@ -12,7 +12,7 @@ type UseCases struct {
 
 func BuildUseCases(deps *Dependencies) *UseCases {
 	return &UseCases{
-		UserUseCase:  user.NewUseCase(deps.UserRepo, deps.Hasher, deps.TokenService),
+		UserUseCase:  user.NewUseCase(deps.UserRepo, deps.UserRoleRepo, deps.Hasher, deps.TokenService),
 		AgentUseCase: agent.NewUseCase(deps.AgentRepo),
 	}
 }

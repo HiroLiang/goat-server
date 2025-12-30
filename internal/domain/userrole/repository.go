@@ -9,7 +9,7 @@ import (
 
 type Repository interface {
 	FindRolesByUser(ctx context.Context, userID user.ID) ([]*role.Role, error)
-	Exists(ctx context.Context, userID string, role role.Type) bool
-	Assign(ctx context.Context, userID string, role role.Type) error
-	Revoke(ctx context.Context, userID string, role role.Type) error
+	Exists(ctx context.Context, userID user.ID, role role.Type) bool
+	Assign(ctx context.Context, userID user.ID, role role.Type) error
+	Revoke(ctx context.Context, userID user.ID, role role.Type) error
 }
