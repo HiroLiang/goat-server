@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	iAuth "github.com/HiroLiang/goat-server/internal/application/shared/auth"
+	iAuth "github.com/HiroLiang/goat-server/internal/application/auth"
 	"github.com/HiroLiang/goat-server/internal/domain/auth"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/auth/session"
 )
