@@ -11,9 +11,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,8 +19,6 @@ import (
 
 	"github.com/HiroLiang/goat-server/internal/bootstrap"
 	"github.com/HiroLiang/goat-server/internal/config"
-	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
-	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis"
 	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -38,68 +34,33 @@ func init() {
 
 func main() {
 
-	// Init logger
+	// Initialize logger
 	logger.Init()
 	defer logger.Stop()
 
-	// Load Config Data
-	if err := config.LoadConfig("./config"); err != nil {
-		logger.Log.Fatal("Error loading config", zap.Error(err))
+	// Load configuration
+	if err := config.LoadConfig(config.Env("CONFIG_PATH", "./config")); err != nil {
+		logger.Log.Fatal("load config error", zap.Error(err))
 	}
 
-	// Init Redis
-	if err := redis.InitRedis(); err != nil {
-		logger.Log.Fatal("Error initializing Redis", zap.Error(err))
+	// Create application
+	app := bootstrap.CreateApp()
+
+	// Start application
+	if err := app.Start(); err != nil {
+		logger.Log.Fatal("start app failed", zap.Error(err))
 	}
 
-	// Init Database
-	if err := database.InitDB(); err != nil {
-		logger.Log.Fatal("Error initializing database", zap.Error(err))
-	}
-	defer database.CloseAllDBs()
-
-	// Init all dependencies
-	dependencies, err := bootstrap.BuildDeps()
-	if err != nil {
-		logger.Log.Fatal("Initialize dependencies failed", zap.Error(err))
-	}
-
-	// build use cases
-	useCases := bootstrap.BuildUseCases(dependencies)
-
-	// Start api server
-	srv := bootstrap.NewServer(":"+config.Env("SERVER_PORT", "8080"), useCases, dependencies)
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Log.Error("Server start error", zap.Error(err))
-		}
-	}()
-	defer func(srv *http.Server) {
-		err := srv.Close()
-		if err != nil {
-			logger.Log.Error("Server close error", zap.Error(err))
-		} else {
-			logger.Log.Info("Server closed")
-		}
-	}(srv)
-
-	// graceful shoutdown
+	// Wait for the stop signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
-	// Block until receiving signal
 	<-quit
-	logger.Log.Info("Shutdown Server ...")
 
-	// set timeout for closing server
+	logger.Log.Info("shutdown signal received")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// try to shoutdown server
-	if err := srv.Shutdown(ctx); err != nil {
-		logger.Log.Error("Server shutdown error", zap.Error(err))
-	} else {
-		logger.Log.Info("Server exiting")
-	}
-
+	// Stop application
+	app.Stop(ctx)
 }

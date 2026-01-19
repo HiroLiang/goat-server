@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -20,22 +21,35 @@ type AppConfig struct {
 		HmacSecret string `mapstructure:"HMAC_SECRET"`
 	} `mapstructure:"secrets"`
 
-	Database map[string]struct {
-		Driver string `mapstructure:"driver"`
-		Dsn    string `mapstructure:"dsn"`
-		Config *struct {
-			MaxOpenConns    int `mapstructure:"max_open_conns"`
-			MaxIdleConns    int `mapstructure:"max_idle_conns"`
-			ConnMaxLifetime int `mapstructure:"conn_max_lifetime"`
-			ConnMaxIdleTime int `mapstructure:"conn_max_idle_time"`
-		} `mapstructure:"config"`
-	} `mapstructure:"databases"`
+	RateLimitConfig struct {
+		GlobalLimit int           `mapstructure:"global_limit"`
+		GlobalUnit  time.Duration `mapstructure:"global_unit"`
+		IPLimit     int           `mapstructure:"ip_limit"`
+		IPUnit      time.Duration `mapstructure:"ip_unit"`
+		UserLimit   int           `mapstructure:"user_limit"`
+		UserUnit    time.Duration `mapstructure:"user_unit"`
+	} `mapstructure:"rate_limit_config"`
+
+	Database map[string]*DBConfig `mapstructure:"databases"`
 
 	Redis struct {
 		Addr     string `mapstructure:"addr"`
 		Password string `mapstructure:"password"`
 		DB       int    `mapstructure:"db"`
 	} `mapstructure:"redis"`
+}
+
+type DBPoolConfig struct {
+	MaxOpenConns    int `mapstructure:"max_open_conns"`
+	MaxIdleConns    int `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime int `mapstructure:"conn_max_lifetime"`
+	ConnMaxIdleTime int `mapstructure:"conn_max_idle_time"`
+}
+
+type DBConfig struct {
+	Driver string        `mapstructure:"driver"`
+	Dsn    string        `mapstructure:"dsn"`
+	Pool   *DBPoolConfig `mapstructure:"pool"`
 }
 
 // global singleton config
@@ -93,7 +107,7 @@ func load(path string) error {
 		return fmt.Errorf("unmarshal config error: %w", err)
 	}
 
-	fmt.Printf("Config loaded: %+v\n", config)
+	fmt.Printf("DBPoolConfig loaded \n")
 	return nil
 }
 

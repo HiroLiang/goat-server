@@ -4,8 +4,8 @@ import "context"
 
 // RateLimiter Generic rate limiter
 type RateLimiter interface {
-	CheckIP(ctx context.Context, ip string) error
 	CheckGlobal(ctx context.Context) error
+	CheckIP(ctx context.Context, ip string) error
 }
 
 // LoginRateLimiter THe rate limiter for login attempts
