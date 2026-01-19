@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/HiroLiang/goat-server/internal/domain/agent"
-	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres"
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -30,8 +29,8 @@ type AgentRepository struct {
 
 var _ agent.Repository = (*AgentRepository)(nil)
 
-func NewAgentRepository(dbName database.DBName) *AgentRepository {
-	return &AgentRepository{db: database.GetDB(dbName)}
+func NewAgentRepository(db *sqlx.DB) *AgentRepository {
+	return &AgentRepository{db: db}
 }
 
 // FindAll returns all agents.
