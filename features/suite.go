@@ -25,7 +25,7 @@ func InitializeSuite(ctx *godog.TestSuiteContext) {
 	ctx.BeforeSuite(func() {
 		logger.InitTestEnv()
 
-		if err := config.LoadConfig("../config"); err != nil {
+		if err := config.LoadConfig("../dev-doc/config"); err != nil {
 			logger.Log.Fatal("Error loading config", zap.Error(err))
 		}
 
