@@ -13,6 +13,8 @@ func RegisterRestRoutes(group *gin.RouterGroup, useCases *UseCases, dependencies
 
 	// Global middleware
 	group.Use(middleware.ErrorHandler())
+	group.Use(middleware.GlobalRateLimitMiddleware(dependencies.RateLimiter))
+	group.Use(middleware.IPRateLimitMiddleware(dependencies.RateLimiter))
 	group.Use(middleware.AuthMiddleware(dependencies.TokenService))
 	group.Use(middleware.ContextMiddleware())
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/HiroLiang/goat-server/internal/domain/user"
-	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres"
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -32,8 +31,8 @@ type UserRepository struct {
 
 var _ user.Repository = (*UserRepository)(nil)
 
-func NewUserRepository(dbName database.DBName) *UserRepository {
-	return &UserRepository{db: database.GetDB(dbName)}
+func NewUserRepository(db *sqlx.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 func (r *UserRepository) FindByID(ctx context.Context, id user.ID) (*user.User, error) {

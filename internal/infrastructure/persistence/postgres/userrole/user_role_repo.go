@@ -9,7 +9,6 @@ import (
 	"github.com/HiroLiang/goat-server/internal/domain/role"
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/domain/userrole"
-	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres"
 	dbRole "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/role"
 	"github.com/Masterminds/squirrel"
@@ -31,8 +30,8 @@ type UserRoleRepository struct {
 
 var _ userrole.Repository = (*UserRoleRepository)(nil)
 
-func NewUserRoleRepository(name database.DBName) *UserRoleRepository {
-	return &UserRoleRepository{db: database.GetDB(name)}
+func NewUserRoleRepository(db *sqlx.DB) *UserRoleRepository {
+	return &UserRoleRepository{db: db}
 }
 
 func (r UserRoleRepository) FindRolesByUser(ctx context.Context, userID user.ID) ([]*role.Role, error) {

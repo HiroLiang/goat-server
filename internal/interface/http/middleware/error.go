@@ -49,6 +49,8 @@ func statusFromCode(code string) int {
 		return http.StatusBadRequest
 	case "AUTH_FAILED":
 		return http.StatusUnauthorized
+	case "RATE_LIMIT_EXCEEDED":
+		return http.StatusTooManyRequests
 	default:
 		return http.StatusInternalServerError
 	}

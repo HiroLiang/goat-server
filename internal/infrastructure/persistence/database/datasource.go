@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 
@@ -26,16 +25,17 @@ var placeholders = map[DBName]squirrel.PlaceholderFormat{
 	Postgres: squirrel.Dollar,
 }
 
-var dbs sync.Map
+type DataSources struct {
+	Sources sync.Map
+}
 
-// InitDB -Initialize database map with config.
-func InitDB() error {
+func NewDataSources(databases map[string]ConnectionConfig) (*DataSources, error) {
 
 	// Clear dbs
-	dbs.Clear()
+	var dataSources = &DataSources{}
 
 	// For each database config
-	for name, conf := range config.App().Database {
+	for name, conf := range databases {
 
 		// check if db name is valid (set in enum DBName)
 		if _, ok := isValidName(name); ok {
@@ -43,50 +43,56 @@ func InitDB() error {
 			// connect to database
 			db, err := sqlx.Connect(conf.Driver, conf.Dsn)
 			if err != nil {
-				return fmt.Errorf("init database %s error: %v", name, err)
+				return nil, fmt.Errorf("init database %s error: %v", name, err)
 			}
 
 			// set db config options
-			if conf.Config != nil {
-				db.SetMaxOpenConns(conf.Config.MaxOpenConns)
-				db.SetMaxIdleConns(conf.Config.MaxIdleConns)
-				db.SetConnMaxLifetime(time.Duration(conf.Config.ConnMaxLifetime) * time.Second)
-				db.SetConnMaxIdleTime(time.Duration(conf.Config.ConnMaxIdleTime) * time.Second)
+			if conf.MaxOpenConns > 0 {
+				db.SetMaxOpenConns(conf.MaxOpenConns)
+			}
+			if conf.MaxIdleConns > 0 {
+				db.SetMaxIdleConns(conf.MaxIdleConns)
+			}
+			if conf.ConnMaxLifetime > 0 {
+				db.SetConnMaxLifetime(conf.ConnMaxLifetime * time.Second)
+			}
+			if conf.ConnMaxIdleTime > 0 {
+				db.SetConnMaxIdleTime(conf.ConnMaxIdleTime * time.Second)
 			}
 
 			// try to ping the database
 			if err := db.Ping(); err != nil {
-				return fmt.Errorf("ping database %s error: %v", name, err)
+				return nil, fmt.Errorf("ping database %s error: %v", name, err)
 			}
 
 			// store database in the map
-			dbs.Store(name, db)
+			dataSources.Sources.Store(name, db)
 			fmt.Printf("init database \"%s\" success\n", name)
 		}
 	}
 
 	// Check if all databases are initialized
-	if err := checkDBMap(); err != nil {
-		return err
+	if err := checkDBMap(dataSources); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return dataSources, nil
 }
 
-func GetDB(name DBName) *sqlx.DB {
-	val, ok := dbs.Load(string(name))
+func (sources *DataSources) GetDB(name DBName) *sqlx.DB {
+	val, ok := sources.Sources.Load(string(name))
 	if !ok {
 		return nil
 	}
 	return val.(*sqlx.DB)
 }
 
-func GetPlaceholder(name DBName) squirrel.PlaceholderFormat {
+func (sources *DataSources) GetPlaceholder(name DBName) squirrel.PlaceholderFormat {
 	return placeholders[name]
 }
 
-func CloseAllDBs() {
-	dbs.Range(func(key, value interface{}) bool {
+func (sources *DataSources) CloseAllDBs() {
+	sources.Sources.Range(func(key, value interface{}) bool {
 		if db, ok := value.(*sqlx.DB); ok {
 			_ = db.Close()
 			fmt.Println("Close DB connection: ", key.(string))
@@ -100,9 +106,9 @@ func isValidName(name string) (DBName, bool) {
 	return dbName, ok
 }
 
-func checkDBMap() error {
+func checkDBMap(dataSources *DataSources) error {
 	for name, key := range dbNames {
-		if db := GetDB(key); db == nil {
+		if db := dataSources.GetDB(key); db == nil {
 			return fmt.Errorf("Database %s not initialized\n", name)
 		}
 	}
