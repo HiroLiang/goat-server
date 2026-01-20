@@ -14,7 +14,7 @@ import (
 // Add more config here if any new config been added in config.yaml.
 type AppConfig struct {
 	AuthToken struct {
-		Expiration int `mapstructure:"expiration"`
+		Expiration time.Duration `mapstructure:"expiration"`
 	} `mapstructure:"auth_token"`
 
 	Secrets struct {

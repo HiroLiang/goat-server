@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"time"
-
 	"github.com/HiroLiang/goat-server/internal/application/shared/auth"
 	"github.com/HiroLiang/goat-server/internal/application/shared/security"
 	"github.com/HiroLiang/goat-server/internal/config"
@@ -18,11 +16,9 @@ import (
 	dbUserrole "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/userrole"
 	redisInfra "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis"
 	redisInfraSecurity "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis/security"
-	userrole2 "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis/userrole"
+	redisUserrole "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis/userrole"
 	infraSecurity "github.com/HiroLiang/goat-server/internal/infrastructure/shared/security"
-	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
 type Dependencies struct {
@@ -40,28 +36,44 @@ func BuildDeps(redis *redis.Client, dataSources *database.DataSources) (*Depende
 	// get config
 	conf := config.App()
 
+	// Postgres datasource
+	postgres := dataSources.GetDB(database.Postgres)
+
 	// redis cache
 	redisCache := redisInfra.NewRedisCache(redis)
 
-	// hmac configs
-	hmacSecret := conf.Secrets.HmacSecret
-
-	// AuthToken configs
-	authExpiration := conf.AuthToken.Expiration
+	// Session store
+	sessionStore := session.NewRedisSessionStore(redisCache, redis)
 
 	return &Dependencies{
-		AgentRepo: dbAgent.NewAgentRepository(dataSources.GetDB(database.Postgres)),
-		TokenService: infraAuth.NewAuthTokenService(
-			session.NewRedisSessionStore(redisCache, redis),
-			time.Duration(authExpiration)*time.Second),
-		Hasher:      infraSecurity.NewArgon2Hasher(),
-		HMACer:      infraSecurity.NewSHA256HMACer(hmacSecret),
-		RateLimiter: buildRateLimiter(redis, conf),
-		UserRepo:    dbUser.NewUserRepository(dataSources.GetDB(database.Postgres)),
-		UserRoleRepo: userrole2.NewUserRoleCachedRepo(redisCache,
-			dbUserrole.NewUserRoleRepository(dataSources.GetDB(database.Postgres))),
+		AgentRepo:    dbAgent.NewAgentRepository(postgres),
+		TokenService: infraAuth.NewAuthTokenService(sessionStore, conf.AuthToken.Expiration),
+		Hasher:       infraSecurity.NewArgon2Hasher(),
+		HMACer:       infraSecurity.NewSHA256HMACer(conf.Secrets.HmacSecret),
+		RateLimiter:  buildRateLimiter(redis, conf),
+		UserRepo:     dbUser.NewUserRepository(postgres),
+		UserRoleRepo: redisUserrole.NewUserRoleCachedRepo(redisCache, dbUserrole.NewUserRoleRepository(postgres)),
 	}, nil
 }
+
+func BuildMockDeps(opts ...DepsOption) *Dependencies {
+	conf := config.App()
+
+	//Default dependencies
+	deps := &Dependencies{
+		Hasher: infraSecurity.NewArgon2Hasher(),
+		HMACer: infraSecurity.NewSHA256HMACer(conf.Secrets.HmacSecret),
+	}
+
+	// Optionals
+	for _, opt := range opts {
+		opt(deps)
+	}
+
+	return deps
+}
+
+type DepsOption func(*Dependencies)
 
 // buildRateLimiter build rate limiter
 func buildRateLimiter(redis *redis.Client, conf *config.AppConfig) security.RateLimiter {
@@ -74,8 +86,6 @@ func buildRateLimiter(redis *redis.Client, conf *config.AppConfig) security.Rate
 		Limit:  int64(rateLimitConf.IPLimit),
 		Window: rateLimitConf.IPUnit,
 	}
-	logger.Log.Info("policy updated", zap.Any("global", globalPolicy))
-	logger.Log.Info("policy updated", zap.Any("ip", ipPolicy))
 	return infraSecurity.NewRedisRateLimiter(
 		redisInfraSecurity.NewRedisRateLimitRepository(redis),
 		globalPolicy,
