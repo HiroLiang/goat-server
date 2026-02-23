@@ -44,7 +44,20 @@ func initConfig(r *gin.Engine) {
 	// setting cors
 	r.Use(cors.New(cors.Config{
 		AllowOriginFunc: func(origin string) bool {
-			return strings.HasSuffix(origin, "hiroliang.com")
+
+			if strings.HasSuffix(origin, "hiroliang.com") {
+				return true
+			}
+
+			if strings.HasPrefix(origin, "http://localhost") {
+				return true
+			}
+
+			if strings.HasPrefix(origin, "tauri://localhost") {
+				return true
+			}
+
+			return false
 		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Accept", "Content-Type", "Authorization", "X-Requested-With"},

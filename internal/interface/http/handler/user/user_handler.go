@@ -143,6 +143,7 @@ func (h *UserHandler) getCurrentUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, CurrentUserResponse{
+		ID:       output.ID,
 		Name:     output.Name,
 		Email:    output.Email,
 		CreateAt: output.CreateAt,
