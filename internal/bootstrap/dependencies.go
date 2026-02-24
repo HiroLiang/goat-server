@@ -5,6 +5,10 @@ import (
 	"github.com/HiroLiang/goat-server/internal/application/shared/security"
 	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/HiroLiang/goat-server/internal/domain/agent"
+	"github.com/HiroLiang/goat-server/internal/domain/chatgroup"
+	"github.com/HiroLiang/goat-server/internal/domain/chatmember"
+	"github.com/HiroLiang/goat-server/internal/domain/chatmessage"
+	"github.com/HiroLiang/goat-server/internal/domain/participant"
 	domainSecurity "github.com/HiroLiang/goat-server/internal/domain/security"
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/domain/userrole"
@@ -12,6 +16,7 @@ import (
 	infraAuth "github.com/HiroLiang/goat-server/internal/infrastructure/auth/token"
 	"github.com/HiroLiang/goat-server/internal/infrastructure/persistence/database"
 	dbAgent "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/agent"
+	dbChat "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/chat"
 	dbUser "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/user"
 	dbUserrole "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/postgres/userrole"
 	redisInfra "github.com/HiroLiang/goat-server/internal/infrastructure/persistence/redis"
@@ -22,13 +27,17 @@ import (
 )
 
 type Dependencies struct {
-	AgentRepo    agent.Repository
-	TokenService auth.TokenService
-	Hasher       security.Hasher
-	HMACer       security.HMACer
-	RateLimiter  security.RateLimiter
-	UserRepo     user.Repository
-	UserRoleRepo userrole.Repository
+	AgentRepo       agent.Repository
+	TokenService    auth.TokenService
+	Hasher          security.Hasher
+	HMACer          security.HMACer
+	RateLimiter     security.RateLimiter
+	UserRepo        user.Repository
+	UserRoleRepo    userrole.Repository
+	ChatGroupRepo   chatgroup.Repository
+	ChatMemberRepo  chatmember.Repository
+	ChatMessageRepo chatmessage.Repository
+	ParticipantRepo participant.Repository
 }
 
 func BuildDeps(redis *redis.Client, dataSources *database.DataSources) (*Dependencies, error) {
@@ -46,13 +55,17 @@ func BuildDeps(redis *redis.Client, dataSources *database.DataSources) (*Depende
 	sessionStore := session.NewRedisSessionStore(redisCache, redis)
 
 	return &Dependencies{
-		AgentRepo:    dbAgent.NewAgentRepository(postgres),
-		TokenService: infraAuth.NewAuthTokenService(sessionStore, conf.AuthToken.Expiration),
-		Hasher:       infraSecurity.NewArgon2Hasher(),
-		HMACer:       infraSecurity.NewSHA256HMACer(conf.Secrets.HmacSecret),
-		RateLimiter:  buildRateLimiter(redis, conf),
-		UserRepo:     dbUser.NewUserRepository(postgres),
-		UserRoleRepo: redisUserrole.NewUserRoleCachedRepo(redisCache, dbUserrole.NewUserRoleRepository(postgres)),
+		AgentRepo:       dbAgent.NewAgentRepository(postgres),
+		TokenService:    infraAuth.NewAuthTokenService(sessionStore, conf.AuthToken.Expiration),
+		Hasher:          infraSecurity.NewArgon2Hasher(),
+		HMACer:          infraSecurity.NewSHA256HMACer(conf.Secrets.HmacSecret),
+		RateLimiter:     buildRateLimiter(redis, conf),
+		UserRepo:        dbUser.NewUserRepository(postgres),
+		UserRoleRepo:    redisUserrole.NewUserRoleCachedRepo(redisCache, dbUserrole.NewUserRoleRepository(postgres)),
+		ChatGroupRepo:   dbChat.NewChatGroupRepository(postgres),
+		ChatMemberRepo:  dbChat.NewChatMemberRepository(postgres),
+		ChatMessageRepo: dbChat.NewChatMessageRepository(postgres),
+		ParticipantRepo: dbChat.NewParticipantRepository(postgres),
 	}, nil
 }
 
