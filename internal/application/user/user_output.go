@@ -10,6 +10,7 @@ type LoginOutput struct {
 
 // CurrentUserOutput let current user logout
 type CurrentUserOutput struct {
+	ID       int
 	Name     string
 	Email    string
 	CreateAt string

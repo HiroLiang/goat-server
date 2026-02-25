@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS goat.public.participants
     avatar_url   TEXT,
     created_at   TIMESTAMP        NOT NULL DEFAULT now(),
 
-    UNIQUE (type, user_id, agent_id),
-
+    -- NOTE: uniqueness is enforced by the partial indexes below (UNIQUE constraint
+    -- with NULLs would not prevent duplicate USER/AGENT/SYSTEM rows)
     CONSTRAINT chk_participant CHECK (
         (type = 'USER' AND user_id IS NOT NULL AND agent_id IS NULL) OR
         (type = 'AGENT' AND agent_id IS NOT NULL AND user_id IS NULL) OR
@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS goat.public.chat_group_members
     is_muted       BOOLEAN          NOT NULL DEFAULT FALSE,
     is_pinned      BOOLEAN          NOT NULL DEFAULT FALSE,
     last_read_at   TIMESTAMP,
+    updated_at     TIMESTAMP        NOT NULL DEFAULT now(),
 
     UNIQUE (group_id, participant_id)
 );

@@ -55,7 +55,7 @@ func (u *UseCase) Register(ctx context.Context, input shared.UseCaseInput[Regist
 	)
 
 	if err := u.userRepo.Create(ctx, newUser); err != nil {
-		return err
+		return user.ErrUserAlreadyExists
 	}
 
 	return nil
@@ -74,7 +74,16 @@ func (u *UseCase) Login(ctx context.Context, input shared.UseCaseInput[LoginInpu
 	currentUser, err := u.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		return LoginOutput{}, user.ErrUserNotFound
-	} else if !currentUser.IsValid() {
+	}
+
+	switch currentUser.Status {
+	case user.Active:
+		break
+	case user.Applying:
+		return LoginOutput{}, user.ErrUserApplying
+	case user.Banned:
+		return LoginOutput{}, user.ErrUserBanned
+	default:
 		return LoginOutput{}, user.ErrInvalidUser
 	}
 
@@ -116,6 +125,7 @@ func (u *UseCase) CurrentUserInfo(
 	}
 
 	return CurrentUserOutput{
+		ID:       int(domainUser.ID),
 		Name:     domainUser.Name,
 		Email:    string(domainUser.Email),
 		CreateAt: timeutil.Format(domainUser.CreatedAt, "2006/01/02 15:04:05"),

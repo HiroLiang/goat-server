@@ -27,6 +27,7 @@ type LoginResponse struct {
 
 // CurrentUserResponse queried for user login request.
 type CurrentUserResponse struct {
+	ID       int    `json:"id"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	CreateAt string `json:"create_at"`
