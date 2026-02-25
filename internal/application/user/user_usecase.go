@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/HiroLiang/goat-server/internal/application/shared"
@@ -13,7 +12,6 @@ import (
 	"github.com/HiroLiang/goat-server/internal/domain/role"
 	"github.com/HiroLiang/goat-server/internal/domain/user"
 	"github.com/HiroLiang/goat-server/internal/domain/userrole"
-	"github.com/HiroLiang/goat-server/internal/logger"
 	"github.com/HiroLiang/goat-server/internal/shared/timeutil"
 )
 
@@ -57,7 +55,7 @@ func (u *UseCase) Register(ctx context.Context, input shared.UseCaseInput[Regist
 	)
 
 	if err := u.userRepo.Create(ctx, newUser); err != nil {
-		return err
+		return user.ErrUserAlreadyExists
 	}
 
 	return nil
@@ -74,8 +72,6 @@ func (u *UseCase) Login(ctx context.Context, input shared.UseCaseInput[LoginInpu
 
 	// Check is user exists
 	currentUser, err := u.userRepo.FindByEmail(ctx, email)
-	logger.Log.Info(fmt.Sprintf("get user: %+v", currentUser))
-	logger.Log.Info(fmt.Sprintf("get err: %+v", err))
 	if err != nil {
 		return LoginOutput{}, user.ErrUserNotFound
 	}

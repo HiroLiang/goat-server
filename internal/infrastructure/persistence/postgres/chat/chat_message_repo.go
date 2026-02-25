@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/HiroLiang/goat-server/internal/domain/chatgroup"
 	"github.com/HiroLiang/goat-server/internal/domain/chatmessage"
@@ -89,6 +90,96 @@ func (r *ChatMessageRepository) FindByGroup(
 	}
 
 	return messages, nil
+}
+
+func (r *ChatMessageRepository) FindByGroupBefore(
+	ctx context.Context,
+	groupID chatgroup.ID,
+	beforeID chatmessage.ID,
+	limit uint64,
+) ([]*chatmessage.ChatMessage, error) {
+	query, args, err := CharMessageTable.Select(CharMessageTable.Columns...).
+		Where(squirrel.And{
+			squirrel.Eq{"group_id": groupID},
+			squirrel.Eq{"is_deleted": false},
+			squirrel.Lt{"id": beforeID},
+		}).
+		OrderBy("id DESC").
+		Limit(limit).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build chat messages before query: %w", err)
+	}
+
+	records, err := postgres.ScanAll[ChatMessageRecord](ctx, r.db, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("scan chat messages before: %w", err)
+	}
+
+	messages := make([]*chatmessage.ChatMessage, 0, len(records))
+	for _, rec := range records {
+		msg, err := toChatMessageDomain(&rec)
+		if err != nil {
+			return nil, fmt.Errorf("convert chat message: %w", err)
+		}
+		messages = append(messages, msg)
+	}
+
+	// Reverse to ascending order (oldest first in the batch)
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
+	}
+
+	return messages, nil
+}
+
+func (r *ChatMessageRepository) FindLatestByGroup(
+	ctx context.Context,
+	groupID chatgroup.ID,
+) (*chatmessage.ChatMessage, error) {
+	query, args, err := CharMessageTable.Select(CharMessageTable.Columns...).
+		Where(squirrel.Eq{"group_id": groupID, "is_deleted": false}).
+		OrderBy("id DESC").
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("build latest message query: %w", err)
+	}
+
+	rec, err := postgres.ScanOne[ChatMessageRecord](ctx, r.db, query, args...)
+	if err != nil {
+		if errors.Is(err, postgres.ErrNotFound) {
+			return nil, chatmessage.ErrNotFound
+		}
+		return nil, fmt.Errorf("find latest message: %w", err)
+	}
+
+	return toChatMessageDomain(rec)
+}
+
+func (r *ChatMessageRepository) CountByGroupAfter(
+	ctx context.Context,
+	groupID chatgroup.ID,
+	since time.Time,
+) (int64, error) {
+	query, args, err := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).
+		Select("COUNT(*)").
+		From(CharMessageTable.Name).
+		Where(squirrel.And{
+			squirrel.Eq{"group_id": groupID, "is_deleted": false},
+			squirrel.Gt{"created_at": since},
+		}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("build count query: %w", err)
+	}
+
+	var count int64
+	if err := r.db.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count messages after: %w", err)
+	}
+
+	return count, nil
 }
 
 func (r *ChatMessageRepository) FindBySender(

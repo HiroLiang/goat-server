@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"github.com/HiroLiang/goat-server/internal/config"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/agent"
+	"github.com/HiroLiang/goat-server/internal/interface/http/handler/chat"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/device"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/health"
 	"github.com/HiroLiang/goat-server/internal/interface/http/handler/test"
@@ -37,6 +38,10 @@ func RegisterRestRoutes(group *gin.RouterGroup, useCases *UseCases, dependencies
 	// Agent Handler
 	var agentHandler = agent.NewAgentHandler(useCases.AgentUseCase)
 	agentHandler.RegisterAgentRoutes(group.Group("/agent", middleware.RequireAuthMiddleware()))
+
+	// Chat Handler
+	var chatHandler = chat.NewChatHandler(useCases.ChatUseCase)
+	chatHandler.RegisterChatRoutes(group.Group("/chat", middleware.RequireAuthMiddleware()))
 
 	// Device Handler
 	var deviceHandler = device.NewDeviceHandler()

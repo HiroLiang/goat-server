@@ -17,6 +17,13 @@ func HandleError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, response.ErrNotFound("user"))
 		return
 
+	case errors.Is(err, user.ErrUserAlreadyExists):
+		c.JSON(http.StatusConflict, response.ErrorResponse{
+			Code:    "USER_EXIST",
+			Message: "user already exists",
+		})
+		return
+
 	case errors.Is(err, user.ErrInvalidUser):
 		c.JSON(http.StatusForbidden, response.ErrInvalid("user"))
 		return

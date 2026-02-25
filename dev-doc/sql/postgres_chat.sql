@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS goat.public.participants
     avatar_url   TEXT,
     created_at   TIMESTAMP        NOT NULL DEFAULT now(),
 
-    -- NOTE: uniqueness is enforced by partial indexes below (UNIQUE constraint
+    -- NOTE: uniqueness is enforced by the partial indexes below (UNIQUE constraint
     -- with NULLs would not prevent duplicate USER/AGENT/SYSTEM rows)
     CONSTRAINT chk_participant CHECK (
         (type = 'USER' AND user_id IS NOT NULL AND agent_id IS NULL) OR

@@ -26,7 +26,8 @@ func NewServer(addr string, useCases *UseCases, dependencies *Dependencies) *htt
 	RegisterRestRoutes(r.Group("/api"), useCases, dependencies)
 
 	// Register WebSocket routes
-	RegisterWsRoutes(r)
+	hub, wsRouter := BuildWsComponents(dependencies)
+	RegisterWsRoutes(r, hub, wsRouter, dependencies)
 
 	// Setting server
 	return &http.Server{
